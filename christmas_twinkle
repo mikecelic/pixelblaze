@@ -1,0 +1,41 @@
+/*
+  Christmas Lights!
+  - Alternating red, green, and white/gold colors
+  - Smooth twinkling effect
+  - Adjustable sparkle speed and color warmth
+*/
+
+// Add a slider to control the sparkle speed
+var sparkleSpeed = 0.5
+export function sliderSparkleSpeed(_v) {
+  sparkleSpeed = _v * 0.01 + 0.005 // Range: 0.005 to 0.015
+}
+
+// Add a slider to control the warmth of the gold
+var warmth = 0.5
+export function sliderWarmth(_v) {
+  warmth = _v * 0.5 + 0.5 // Range: 0.5 to 1.0
+}
+
+var sparkleTimer = 0 // Timer for the twinkle effect
+pixels = array(pixelCount) // Array to hold the sparkle brightness
+
+export function beforeRender(delta) {
+  sparkleTimer += delta * sparkleSpeed // Accumulate sparkle timer
+  for (i = 0; i < pixelCount; i++) {
+    // Apply sparkle fade
+    pixels[i] -= pixels[i] * (delta / 1000) * 2
+    if (pixels[i] < 0.1 && random(100) < 5) {
+      pixels[i] = random(0.5) + 0.5 // Sparkle up to a random brightness
+    }
+  }
+}
+
+export function render(index) {
+  // Alternate between red, green, and white/gold along the strip
+  h = (index % 3 == 0) ? 0 : (index % 3 == 1) ? 0.33 : 0.16
+  s = (index % 3 == 2) ? warmth : 1
+  v = pixels[index]
+  
+  hsv(h, s, v)
+}
