@@ -1,0 +1,27 @@
+/*
+  Christmas Light Display!
+  - Twinkling lights
+  - Uses only the first mode from the original code
+  - Includes color control for customization
+*/
+
+// Define colors for the Christmas theme
+var red = 0
+var green = 1 / 3
+var white = 1
+
+// Define the first mode: Twinkling lights
+modeFunction = (f, t) => wave(f + t) * (random(2) > 1 ? 0.5 : 1) // Twinkling lights
+
+var timer = 0
+export function beforeRender(delta) {
+  t = time(.5) // Slow cycling for wave effects
+}
+
+export function render(index) {
+  f = index / pixelCount // Normalize index for 0..1 range
+  h = modeFunction(f, t) // Call the first mode function
+  s = 1
+  v = wave(f + t) // Add gentle flicker to the brightness
+  hsv(h, s, v)
+}
