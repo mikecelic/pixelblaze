@@ -1,0 +1,335 @@
+/*
+  In this example you'll see:
+  - Colors!!!
+  - Using an array to switch between modes
+  - Lambda style function expressions
+  - More colors!
+  - Accumulating delta to make a mode switch timer
+  - Viewing which mode is playing in the variable watcher
+*/
+ 
+// First, keep track of how many modes there will be
+numModes = 13
+modes = array(numModes) // Make an array to store the modes
+
+// Make a bunch of lambda style mode functions and put them in the modes array
+// f is expected to be in 0..4
+modes[0]  = (f) => f     // As values progress, a rainbow is drawn
+modes[1]  = (f) => 0     // A hue of 0.0 or 1.0 is red
+modes[2]  = (f) => 1 / 3 // A hue around 1/3 is green
+modes[3]  = (f) => 2 / 3 // 2/3 hue is blue
+modes[4]  = (f) => 1     // This wraps back around to red
+modes[5]  = (f) => f * .2 % .2 // Using modulus will wrap early and with a sharp edge
+modes[6]  = (f) => triangle(f) * .2 // Using triangle will keep the transitions smooth
+modes[7]  = (f) => wave(f) * .2 // Wave also works, but is non-linear
+modes[8]  = (f) => square(f, .5) * .5 + .33 // Square can make stripes
+modes[9]  = (f) => wave(f) * triangle(f*4) * .2 // Color textures by combining waveforms
+modes[10] = (f) => wave(f)*.5 % .2 - triangle(f) * .2 + .66 // More textures
+modes[11] = (f) => (f + f % .2) * .5 // Mod error overlay
+modes[12] = (f) => abs(f* .25 - .5) * 2 // Centered  
+
+timer = 0 // Accumulate all the deltas each animation frame
+
+/*
+  Adding `export` when declaring a variable will send it back to any connected 
+  web browser via websockets. To see the current value of `mode`, click "Enable"
+  next to "Vars Watch" in the web editor.
+*/
+export var mode = 0 // Start with mode 0
+
+/*
+  The beforeRender function is called once before each animation frame
+  and is passed a delta in fractional milliseconds since the last frame.
+  This has very high resolution, down to 6.25 nanoseconds!
+*/
+export function beforeRender(delta) {
+  timer += delta // Accumulate all the deltas into a timer
+  if (timer > 600) { // After 600ms, rewind the timer and switch modes
+    timer -= 600
+    mode = (mode + 1) % numModes // Go to the next mode, and keep between 0 and numModes
+  }
+  
+  // Uncomment this line to check out a specific mode
+  // mode = 0
+}
+
+/*
+  The render function is called for every pixel. Here we're going to use 
+  the pixel's index to make a number between 0.0 and 4.0. This acts as a 4X 
+  frequency modifier, repeating the pattern 4 times across the strip length.
+  That 0-4 value is passed in to the current mode function and its output is 
+  used to set the pixel's hue. hsv() "wraps" hue between 0.0 and 1.0.
+*/
+export function render(index) {
+  // Look up the current mode function and call it
+  h = modes[mode](4 * index / pixelCount)
+  hsv(h, 1, 1)
+}
+
+
+
+/*
+  In this example you'll see:
+  - Using an array to switch between modes
+  - Lambda style function expressions
+  - Different waveform functions and combinations
+  - Accumulating delta to make a mode switch timer
+  - Creating and using UI controls
+*/
+ 
+// Keep track of how many modes there will be
+numModes = 13
+modes = array(numModes) // Make an array to store the modes
+
+// Make a bunch of lambda style mode functions and put them in the modes array
+// f is expected to be in 0..frequency 
+modes[0]  = (f) => f % 1 // This will just cause any numbers above 1.0 to wrap around
+modes[1]  = (f) => triangle(f) // triangle has a linear slope
+modes[2]  = (f) => wave(f) // wave uses the sin to create rounded slopes
+modes[3]  = (f) => square(f, .5) // A square wave is just on or off and has no transition
+modes[4]  = (f) => triangle(triangle(f)) // Combining wave functions can create interesting effects
+modes[5]  = (f) => wave(triangle(f))
+modes[6]  = (f) => triangle(wave(f))
+modes[7]  = (f) => wave(wave(f))
+modes[8]  = (f) => square(wave(triangle(f)), .7) // Here we've made a dash-dot-dash pattern
+modes[9]  = (f) => wave(f) * triangle(f * 1.3) // By multiplying waveforms, we get a darken effect
+modes[10] = (f) => (wave(f*1) + triangle(f * 3.3)) / 2 // Blend waveforms by averaging them
+modes[11] = (f) => triangle(f*2) - wave(f * 1.5) // Subtraction can create interesting interference patterns
+modes[12] = (f) => abs(triangle(f) - wave(f * 2)) // Subtraction with absolute value gives a distance
+
+timer = 0 // Accumulate all the deltas each animation frame
+mode = 0 // Start with mode 0
+
+/* 
+  To create a color picker UI control, write an event handler that starts with 
+  "hsvPicker" or "rgbPicker". A color picker will appear in the code editor
+  as well as when this pattern is selected from the main pattern list. The hue,
+  saturation, and value selected in the web interface are passed as arguments to
+  this handler as values between 0.0 and 1.0. The underscore just differentiates
+  the local variable `_h`` from the global variable, `h`.
+*/
+var h = 0, s = 0, v = 1
+export function hsvPickerColor(_h, _s, _v) { h = _h; s = _s; v = _v }
+
+/*
+  To create a UI slider control in the Pixelblaze IDE, write an event handler 
+  that starts with "slider". All UI handlers in a pattern are called when 
+  *any* UI control changes. The value passed into this function will be between
+  0 and 1. Sliders remember their position.
+*/
+var frequency = 4 // Default to repeating waveforms 4 times across a strip
+export function sliderFrequency(x) { frequency = 1 + 7 * x } // 1.0 to 8.0
+
+
+/* 
+  The beforeRender function is called once before each animation frame
+  and is passed a delta in fractional milliseconds since the last frame.
+  This has very high resolution, down to 6.25 nanoseconds!
+*/
+export function beforeRender(delta) {
+  timer += delta // Accumulate all the deltas into a timer
+  if (timer > 600) { // After 600ms, rewind the timer and switch modes
+    timer -= 600
+    mode = (mode + 1) % numModes // Go to the next mode, and keep between 0 and numModes
+  }
+  
+  // Uncomment this line to check out a specific mode
+  // mode = 0
+}
+
+/*
+  The render function is called for every pixel. Here we're going to use the
+  pixel's index to make a number between 0.0 and `frequency`. `frequency` is
+  set in sliderFrequency() above to have a range from 1.0 to 8.0, selectible 
+  by you in the Pixelblaze web interface. The result is that the math function
+  selected by `mode` will be repeated `frequency` times across the strip length.
+  The function's output modulates the pixel's brightness `v`alue.
+*/
+export function render(index) {
+  // Look up the current mode function and call it
+  brightness = modes[mode](frequency * index / pixelCount)
+
+  hsv(h, s, v * brightness)
+}
+
+
+
+
+/*
+This pattern is based on the default scrolling rainbow and has a slider to control speed.
+It uses an accumulation based on delta instead of time() so that changes in speed do not cause the animation to jump.
+The downsides is slightly more code, and this pattern won't be synchronized with other Pixelblazes through firestorm.
+*/
+
+var speedRange = 1/1000 // this scales the milliseconds back to a usable range. shown here, the max rate is 1Hz
+var speed = speedRange // controlled by slider
+
+export function sliderSpeed(s) {
+  speed = s*s * speedRange // square it to give better control at lower values, then scale it
+}
+
+var t1
+export function beforeRender(delta) {
+  t1 = (t1 + delta * speed) % 1 // accumulate time in t1, and wrap it using modulus math to keep it between 0-1
+}
+
+export function render(index) {
+  h = t1 + index/pixelCount
+  s = 1
+  v = 1
+  hsv(h, s, v)
+}
+
+
+
+
+/*
+ In this example you'll see:
+ - time and animation
+ - using an array to switch between modes
+ - lambda style function expressions
+ - Another way to make a mode switch timer
+*/
+
+var t2 // Declare this variable here so we can reference it in our mode functions
+
+numModes = 14 // Keep track of how many modes there will be
+modes = array(numModes) // Make an array to store the modes
+
+// Make a bunch of lambda style mode functions and put them in the modes array
+// f is expected to be in 0..4
+modes[0]  = (f, t) => (f + t) % 1 // Moving left
+modes[1]  = (f, t) => (1 + f - t) % 1 // Moving right
+modes[2]  = (f, t) => (f + triangle(t)) % 1 // Bounce back and forth
+modes[3]  = (f, t) => (f + wave(t)) % 1 // Smooth back and forth
+modes[4]  = (f, t) => square(f + t, .5) // A chaser 
+modes[5]  = (f, t) => (f + triangle(triangle(t) * t)) % 1 // Combining wave functions can create interesting effects
+modes[6]  = (f, t) => (f + wave(wave(t))) % 1 // Warbly movemovent
+modes[7]  = (f, t) => square(triangle(wave(t)) + f, .5) // Bouncing
+modes[8]  = (f, t) => wave(f + t) * wave(f + t2) // Times with different intervals create interesting waveform interactions
+modes[9]  = (f, t) => wave(wave(f + t) + wave(f - t2) + f - t) // Wave textures
+modes[10] = (f, t) => wave(f + wave(wave(t) + f / 4)) // Stretchy effect
+modes[11] = (f, t) => wave((f - 2) * (1 + wave(t))) * wave(wave(t2) + f) // Zoomed and blended
+modes[12] = (f, t) => 2 * triangle(f + wave(t)) - wave(f * .75 + wave(t2)) // Kinetic
+modes[13] = (f, t) => abs(triangle(f - triangle(t2)) - wave(f * 2 + triangle(t))) // Glitch conveyer belt
+
+mode = 0 // Start with mode 0. Remember you can prepend "export var" to use the Vars Watch.
+
+/* 
+  The beforeRender function is called once before each animation frame
+  and is passed a delta in fractional milliseconds since the last frame.
+  This has very high resolution, down to 6.25 nanoseconds!
+*/
+export function beforeRender(delta) {
+  t = time(.05)  // Loops 0..1 about every 3.3 seconds
+  t2 = time(.03) // Loops 0..1 about every 1.3 seconds
+  modeT = time(numModes * 0.6 / 65.536) // 600ms per mode, so 0..1 every numModes * 0.6 seconds
+  mode = floor(modeT *  numModes) // mode will be 0, 1, 2, etc up to (numModes - 1)
+
+  // Uncomment this line to check out a specific mode
+  // mode = 12
+}
+
+/*
+  The render function is called for every pixel. Here we're going to use 
+  the pixel's index to make a number between 0.0 and 4.0. This acts as a 4X 
+  frequency modifier, repeating the pattern 4 times across the strip length.
+  That 0-4 value is passed in to the current mode function and its output is 
+  used to set the pixel's hue. hsv() "wraps" hue between 0.0 and 1.0.
+*/
+export function render(index) {
+  // Look up the current mode function and call it
+  v = modes[mode](4 * index / pixelCount, t)
+  hsv(0, 0, v)
+}
+
+
+
+/*
+  Lightning ZAP!
+  
+  This pattern illustrates how you can create user interface controls that show
+  up in the Pixelblaze pattern list and code editor (on wider screens, look to
+  the right above the Vars Watch). Controls are created automatically when you
+  export functions that have names beginning with "hsvPicker", "rgbPicker", or
+  "slider". See further documentation below the code editor.
+  
+  This pattern was for a Halloween installation of bifurcated strips that split
+  off to look like lightning bolts. While many examples show smooth wave
+  functions, this example shows one way to work with bigger chunks of time.
+  
+  Strips: https://www.instagram.com/p/B4F-93EBNVV/
+  Installed: https://www.instagram.com/p/B4TuvDSBXHl/
+*/
+
+// Add a color picker control to make it easy to change the color of the bolts!
+// Set up variables to store the chosen bolt color
+var hue = 0, saturation = 0, value = 1
+export function hsvPickerBoltColor(_h, _s, _v) {
+  hue = _h
+  saturation = _s
+  value = _v
+}
+
+// Add a slider control to select the speed of the lightning bolts
+fade = 15  // How fast each lightning bolt section fades out
+delayFactor = 15  // Determines the time between successive bolt segments
+resetDelayFactor = 1000 // Determines the pause between complete lightning bolts
+// _v from the slider will be in 0..1
+export function sliderBoltSpeed(_v) {
+  fade = 2 + _v * 13 // fade will therefore be set to something between 2 and 15
+  delayFactor = 15 + (1 - _v) * 15
+  resetDelayFactor = 1000 + (1 - _v) * 2000
+}
+
+// Set up each bolt segment to be between 1/15th and 1/6th of the strip length
+boltMin = floor(pixelCount / 15)
+boltMax = ceil(pixelCount / 6)
+
+pixels = array(pixelCount)
+x = 0
+timer = 0
+
+export function beforeRender(delta) {
+  // Most frames we are fading all pixels and counting down a timer
+  for (i = 0; i < pixelCount; i++)
+    pixels[i] -= (pixels[i] * fade * (delta / 1000)) + (1 >> 16)
+  
+  // `timer` is the ms remaining before we ignite a new lightning bolt section
+  timer -= delta
+  
+  if (timer <= 0) {
+    // New lightning bolt segment's size, in pixels
+    boltSize = boltMin + random(boltMax - boltMin)
+    while (boltSize-- > 0 && x < pixelCount) {
+      pixels[x++] = 1  // Fill these pixels bright white
+    }
+
+    timer = random(delayFactor) + delayFactor / 5
+    // Squaring makes longer delays, and makes them rarer. A delayFactor of 15
+    // produces 9ms-324ms timers between successive bolt segments igniting.
+    timer *= timer 
+    
+    // If a lightning bolt has reached the end of the strip,
+    if (x >= pixelCount) {
+      x = 0
+      // Pause between bolts for 0.33-1.33 * resetDelayFactor milliseconds
+      timer = random(resetDelayFactor) + resetDelayFactor/3
+    }
+  }
+}
+
+export function render(index) {
+  v = pixels[index]
+  hsv(hue, saturation, v * value)
+}
+
+
+
+
+
+this is a bunch of pixelblaze example code. please read / understand the code and only make stuff based off these examples, do not use any other programming logic besides what you see.
+
+
+
+
