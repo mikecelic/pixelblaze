@@ -1,0 +1,43 @@
+/*
+  Wintery Twinkle
+  A subtle, icy sparkle effect inspired by winter. This pattern creates a calm, cold atmosphere with gentle twinkling.
+  Based on provided examples.
+*/
+
+// Set up variables for color and twinkle effect
+var hue = 0.6, saturation = 0.3, baseValue = 0.5 // Base icy blue tone
+var twinkleValue = 0.8 // Maximum brightness of twinkles
+var fade = 10 // How quickly twinkles fade out
+var twinkleRate = 0.05 // Chance for a twinkle at any given pixel
+
+pixels = array(pixelCount) // Array to hold brightness levels for each pixel
+
+// Add a color picker to tweak the icy hue if desired
+export function hsvPickerWinterColor(_h, _s, _v) {
+  hue = _h
+  saturation = _s
+  baseValue = _v
+}
+
+// Control the twinkle rate with a slider
+export function sliderTwinkleRate(_v) {
+  twinkleRate = _v * 0.1 // Adjust the twinkle rate from 0 to 10%
+}
+
+export function beforeRender(delta) {
+  // Fade out all pixels slightly each frame
+  for (i = 0; i < pixelCount; i++) {
+    pixels[i] -= (pixels[i] * fade * (delta / 1000)) + (1 >> 16)
+    
+    // Random chance to add a twinkle
+    if (random(1) < twinkleRate) {
+      pixels[i] = twinkleValue
+    }
+  }
+}
+
+export function render(index) {
+  // Blend the base value with the current twinkle brightness
+  v = baseValue + (pixels[index] * (1 - baseValue))
+  hsv(hue, saturation, v)
+}
