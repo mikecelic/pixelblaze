@@ -1,0 +1,38 @@
+/*
+  Spring Breeze – with 100ms White Twinkles
+  A gentle green and purple bloom with quick white twinkles that flash briefly.
+*/
+
+export var t = 0
+var frequency = 3
+var sparkleChance = 0.005      // Probability of a new sparkle per pixel per frame
+var sparkleDuration = 50      // Sparkle duration in milliseconds
+var timers = array(pixelCount) // Timer per pixel for sparkle tracking
+
+export function beforeRender(delta) {
+  t = (t + delta / 30000) % 1
+
+  for (i = 0; i < pixelCount; i++) {
+    timers[i] -= delta
+
+    // Chance to start a new sparkle if timer is off
+    if (timers[i] <= 0 && random(1) < sparkleChance) {
+      timers[i] = sparkleDuration
+    }
+  }
+}
+
+export function render(index) {
+  f = frequency * index / pixelCount
+
+  // Soft blooming background in green and purple
+  bloom = wave(f + t) * triangle(f * 2 - t * 2)
+  hue = (1/3) * (1 - bloom) + (5/6) * bloom
+  brightness = 0.7 + 0.3 * wave(f * 0.5 + t * 2)
+
+  if (timers[index] > 0) {
+    hsv(0, 0, 1) // Brief white twinkle
+  } else {
+    hsv(hue, 1, brightness)
+  }
+}
